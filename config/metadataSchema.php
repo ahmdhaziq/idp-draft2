@@ -1,9 +1,7 @@
 <?php
 return [
-    'gitlab_repo' => [
-            'fields' => [
-                'project_id' => ['integer','required'],
-                'project_access_token' => ['string','required'],
-            ],
-        ],
-    ];
+    'gitlab_repo' =>[
+        'project_id' => 'required|integer',
+        'project_access_token' => 'required|string',
+    ],
+];

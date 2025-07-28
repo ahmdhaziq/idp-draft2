@@ -15,7 +15,11 @@ class ServiceAssets extends Model
         'metadata'
     ];
 
+    protected $casts = [
+        'metadata' => 'array',
+    ];
+
     public function services(){
-        return $this->belongsTo(services::class);
+        return $this->belongsTo(services::class,'serviceId');
     }
 }

@@ -16,4 +16,26 @@ class EditServiceAssets extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeUpdate(array $data): array{
+        
+        $serviceId = $data['serviceId'];
+        $serviceName = services::where('id',$serviceId)->value('service_identifier');
+        
+        $metadataFields = config("metadataSchema.$serviceName");
+       
+        $metadataInput = [];
+
+        foreach ($metadataFields as $field => $rule){
+            if (array_key_exists($field,$data)){
+                $metadataInput[$field] = $data[$field];
+            }
+        }
+        
+        $validated = MetadataValidator::validate($serviceId,$metadataInput);
+        
+        $data['metadata']= $validated;
+
+        return $data;
+    }
 }
