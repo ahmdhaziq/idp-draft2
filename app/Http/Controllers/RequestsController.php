@@ -12,15 +12,17 @@ class RequestsController extends Controller
 {
     //save requests to database
 
-    public static function newRequests($data,$userid){
-
+    public static function newRequests($data){
+        $userid = $data ['userid'];
         $requestor = User::where('id',$userid)->value('name');
-        $assetName = $data['asset_name'];
+        $assetid = $data['assetId'];
+
+        $assetName = ServiceAssets::where('id',$assetid)->value('resource_name');
 
         $accessRequests = new AccessRequests();
         $accessRequests->userId = $userid;
         $accessRequests->requestName = $assetName . '-' . $requestor . '-Requests' . rand(1,10000);
-        $accessRequests->assetId = ServiceAssets::where('id',$data['assets']);
+        $accessRequests->assetId = ServiceAssets::where('id',$data['assets'])->value('id');
         $accessRequests->context = $data['context'] ?? null;
         $accessRequests->status = 'Pending';
         $accessRequests->duration = $data['duration'];
@@ -63,7 +65,7 @@ class RequestsController extends Controller
     public static function rejectRequests ($record){
         $record->update(
             [
-                'status' => 'Approved',
+                'status' => 'Rejected',
             ]
             );
     }
