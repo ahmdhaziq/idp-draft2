@@ -62,10 +62,12 @@ class RequestsController extends Controller
         );
     }
 
-    public static function rejectRequests ($record){
+    public static function rejectRequests ($record,$data){
+        $rejectRemark = $data['rejection_remark'];
         $record->update(
             [
                 'status' => 'Rejected',
+                'rejection_remark' => $rejectRemark,
             ]
             );
     }

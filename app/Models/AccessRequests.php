@@ -29,12 +29,12 @@ class AccessRequests extends Model
     });
 }
 
-public function userId(){
-    return $this->belongsTo(User::class,'id');
+public function user(){
+    return $this->belongsTo(User::class,'userId');
 }
 
-public function assetId(){
-    return $this->belongsTo(ServiceAssets::class,'id');
+public function asset(){
+    return $this->belongsTo(ServiceAssets::class,'assetId');
 }
 
 }

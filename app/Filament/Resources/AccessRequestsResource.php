@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -63,12 +64,10 @@ class AccessRequestsResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('requestName')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('userId')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('assetId')
-                    ->numeric()
-                    ->sortable(),
+                TextColumn::make('user.name')
+                ->label('Requestor'),
+                Tables\Columns\TextColumn::make('asset.resource_name')
+                    ->label('Assets'),
                 Tables\Columns\TextColumn::make('context')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('rejection_remark')

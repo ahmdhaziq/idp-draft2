@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Http\Controllers\RequestsController;
 use App\Models\AccessRequests;
 use App\Models\User;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -28,15 +29,15 @@ class pendingRequestsTable extends BaseWidget
                 // ...
                 TextColumn::make('requestName')
                 ->label('Requests'),
-                TextColumn::make('assetId.resource_name')
+                TextColumn::make('asset.resource_name')
                 ->label('Asset Name'),
                 TextColumn::make('status')
                 ->label('Status'),
                 TextColumn::make('context')
                 ->label('Context'),
-                TextColumn::make('userId.name')
+                TextColumn::make('user.name')
                 ->label('Requestor'),
-                TextColumn::make('duration')
+                TextColumn::make('duration'),
             ])
             ->actions([
                 Action::make('approveRequests')
@@ -51,11 +52,15 @@ class pendingRequestsTable extends BaseWidget
                 ->label('Reject')
                 ->color('danger')
                 ->button()
-                ->action(function($record){
-                    RequestsController::rejectRequests($record);
+                ->form([
+                    TextInput::make('rejection_remark')
+                    ->label('Remarks')
+                ])
+                ->action(function($record,$data){
+                    RequestsController::rejectRequests($record,$data);
                 })
                 ->requiresConfirmation()
-
+                
             ]);
     }
 }
