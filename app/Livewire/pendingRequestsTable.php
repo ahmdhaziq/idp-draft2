@@ -11,6 +11,7 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use PhpParser\Node\Stmt\Label;
 
 class pendingRequestsTable extends BaseWidget
 {
@@ -38,6 +39,10 @@ class pendingRequestsTable extends BaseWidget
                 TextColumn::make('user.name')
                 ->label('Requestor'),
                 TextColumn::make('duration'),
+                TextColumn::make('access_action')
+                ->label('Access Action'),
+                TextColumn::make('access_type')
+                ->label('Access Type')
             ])
             ->actions([
                 Action::make('approveRequests')

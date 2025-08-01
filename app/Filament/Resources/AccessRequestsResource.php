@@ -6,7 +6,9 @@ use App\Filament\Resources\AccessRequestsResource\Pages;
 use App\Filament\Resources\AccessRequestsResource\RelationManagers;
 use App\Models\AccessRequests;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -36,6 +38,17 @@ class AccessRequestsResource extends Resource
                 Forms\Components\TextInput::make('context')
                     ->required()
                     ->maxLength(255),
+                Select::make('access_type')
+                ->options([
+                    'permanent' => 'Permanent',
+                    'temporary' => 'Temporary'
+                ])
+                ->reactive(),
+                Select::make('access_action')
+                ->options([
+                    'new' => 'New',
+                    'modify' => 'Modify'
+                ]),
                 Forms\Components\TextInput::make('rejection_remark')
                     ->required()
                     ->maxLength(255),
@@ -43,7 +56,12 @@ class AccessRequestsResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\DateTimePicker::make('duration')
-                    ->required(),
+                    ->visible(function(Get $get){
+                        $accessType = $get('access_type');
+                        if ($accessType=='temporary'){
+                            return true;
+                        };
+                    } ),
                 Forms\Components\TextInput::make('access_level')
                     ->required()
                     ->maxLength(255),
@@ -63,6 +81,7 @@ class AccessRequestsResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('requestName')
+                    ->label('Request')
                     ->searchable(),
                 TextColumn::make('user.name')
                 ->label('Requestor'),
@@ -70,6 +89,10 @@ class AccessRequestsResource extends Resource
                     ->label('Assets'),
                 Tables\Columns\TextColumn::make('context')
                     ->searchable(),
+                TextColumn::make('access_type')
+                ->label('Access Level'),
+                TextColumn::make('access_action')
+                ->label('Access Action'),
                 Tables\Columns\TextColumn::make('rejection_remark')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')

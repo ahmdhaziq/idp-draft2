@@ -7,6 +7,7 @@ use App\Models\ServiceAssets;
 use App\Models\User;
 use Filament\Notifications\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class RequestsController extends Controller
 {
@@ -21,13 +22,17 @@ class RequestsController extends Controller
 
         $accessRequests = new AccessRequests();
         $accessRequests->userId = $userid;
+        $accessRequests->access_action = $data['access_action'];
+        $accessRequests->access_type = $data['access_type'];
         $accessRequests->requestName = $assetName . '-' . $requestor . '-Requests' . rand(1,10000);
         $accessRequests->assetId = ServiceAssets::where('id',$data['assets'])->value('id');
         $accessRequests->context = $data['context'] ?? null;
         $accessRequests->status = 'Pending';
-        $accessRequests->duration = $data['duration'];
+        $accessRequests->duration = $data['duration'] ?? null;
         $accessRequests->access_level = $data['access_level'];
-        
+        $accessRequests->request_metadata = [
+            'gitlabuserId' => $data['gitlabuserId'],
+        ];
         $saveSuccess = $accessRequests->save();
 
         if ($saveSuccess){
@@ -71,6 +76,29 @@ class RequestsController extends Controller
             ]
             );
     }
+
+    public static function getUserId($userId){
+
+        $email = User::where('id',$userId)->value('email');
+        
+
+        $response = Http::withToken(env('GITLAB_TOKEN'))
+        ->get('https://gitlab.teratotech.com/api/v4/users',[
+        'search' => $email,
+        ]);
+        
+         
+        $user = $response->json();
+        
+      
+
+        
+        $gitlabUserId = $user[0]['id'];
+        
+        
+        return $gitlabUserId ?? null;
+
+     }
 
 
 

@@ -13,12 +13,20 @@ class AccessRequests extends Model
         'requestName',
         'userId',
         'assetId',
+        'access_action',
+        'access_type',
         'context',
         'rejection_remark',
         'status',
         'duration',
-        'access_level'
+        'access_level',
+        'request_metadata'
     ];
+
+    protected $casts = [
+        'request_metadata' => 'array',
+    ];
+    
 
     protected static function booted()
 {

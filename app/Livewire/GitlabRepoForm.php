@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Handlers\AccessHandlers\GitlabHandlers;
 use App\Http\Controllers\RequestsController;
 use App\Models\ServiceAssets;
 use App\Models\services;
@@ -13,6 +14,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Livewire\Component;
 
 class GitlabRepoForm extends Component implements HasForms
@@ -24,9 +26,11 @@ class GitlabRepoForm extends Component implements HasForms
     {
         $this->form->fill();
     }
+
     public ?array $data;
 
-    
+    public bool $manualGitlabId = false;
+
 
     public function form(Form $form) {
         
@@ -52,10 +56,25 @@ class GitlabRepoForm extends Component implements HasForms
         ->searchable()
         ->reactive(),
 
+        Select::make('access_type')
+                ->label('Access Type')
+                ->options([
+                    'Permanent' => 'Permanent',
+                    'Temporary' => 'Temporary'
+                ])
+                ->reactive(),
+                Select::make('access_action')
+                ->label('Access Actions')
+                ->options([
+                    'New' => 'New',
+                    'Modify' => 'Modify'
+                ]),
+
         Select::make('access_level')
+        ->label('Access Level')
         ->options(
             
-            /*function(Get $get){
+            /*  function(Get $get){
             $assetId = $get('assetId');
             if (!$assetId){
                 return [];
@@ -68,7 +87,7 @@ class GitlabRepoForm extends Component implements HasForms
                 return [$value => $key]; 
             })
             ->toArray(); 
-            }*/
+            }    */
             
           [
              '10'=>'Guest',
@@ -81,16 +100,42 @@ class GitlabRepoForm extends Component implements HasForms
 
         TextInput::make('context'),
         DateTimePicker::make('duration')
+        ->visible(function(Get $get){
+            $accessType = $get('access_type');
+            if ($accessType=='Temporary'){
+                return true;
+            };
+        }),
+
+        TextInput::make('gitlabuserId')
+        ->visible(fn()=> $this->manualGitlabId)
+       
+        
 ]) 
 
 ->statePath('data');
     
 }
-
+   
     public function save(){
         $data = $this->form->getState();
-        RequestsController::newRequests($data);
-        session()->flash('success',value: 'Requests Submitted Successfully');
+        $gitlabuserId= ' ';
+        if (empty($data['gitlabuserId'])){
+            $gitlabuserId = RequestsController::getUserId($data['userid']);
+        }else{
+            $gitlabuserId = $data['gitlabuserId'];
+        }
+
+        if ($gitlabuserId == null){
+           $this->manualGitlabId = true;
+           session()->flash('success','No Gitlab User ID found with email, please fill in the form.');
+           return;
+        }else{
+            $data['gitlabuserId'] = $gitlabuserId;
+            RequestsController::newRequests($data);
+            session()->flash('success',value: 'Requests Submitted Successfully');
+        }
+        
     }
 
     public function render()
