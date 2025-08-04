@@ -54,7 +54,8 @@ class GitlabRepoForm extends Component implements HasForms
             ->toArray()
         )
         ->searchable()
-        ->reactive(),
+        ->reactive()
+        ->required(),
 
         Select::make('access_type')
                 ->label('Access Type')
@@ -62,13 +63,15 @@ class GitlabRepoForm extends Component implements HasForms
                     'Permanent' => 'Permanent',
                     'Temporary' => 'Temporary'
                 ])
-                ->reactive(),
+                ->reactive()
+                ->required(),
                 Select::make('access_action')
                 ->label('Access Actions')
                 ->options([
                     'New' => 'New',
                     'Modify' => 'Modify'
-                ]),
+                ])
+                ->required(),
 
         Select::make('access_level')
         ->label('Access Level')
@@ -96,19 +99,23 @@ class GitlabRepoForm extends Component implements HasForms
              '30'=>'Developer',
              '40'=>'Maintainer'
           ] 
-    ),
+    )
+    ->required(),
 
-        TextInput::make('context'),
+        TextInput::make('context')
+        ->required(),
         DateTimePicker::make('duration')
         ->visible(function(Get $get){
             $accessType = $get('access_type');
             if ($accessType=='Temporary'){
                 return true;
             };
-        }),
+        })
+        ->required(),
 
         TextInput::make('gitlabuserId')
-        ->visible(fn()=> $this->manualGitlabId)
+        ->label('Gitlab User ID (If empty, system will attempt to find your ID using email registered with IDP.)')
+        
        
         
 ]) 

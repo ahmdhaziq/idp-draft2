@@ -6,6 +6,7 @@ use App\Http\Controllers\RequestsController;
 use App\Models\AccessRequests;
 use App\Models\User;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -38,7 +39,8 @@ class pendingRequestsTable extends BaseWidget
                 ->label('Context'),
                 TextColumn::make('user.name')
                 ->label('Requestor'),
-                TextColumn::make('duration'),
+                TextColumn::make('duration')
+                ->label('Access Until'),
                 TextColumn::make('access_action')
                 ->label('Access Action'),
                 TextColumn::make('access_type')
@@ -50,7 +52,18 @@ class pendingRequestsTable extends BaseWidget
                 ->color('success')
                 ->button()
                 ->action(function($record){
-                    RequestsController::approveRequests($record);
+                    $data = RequestsController::approveRequests($record);
+                    if (isset($data['error'])){
+                        Notification::make()
+                        ->title('Access Granting Failed. Please try again')
+                        ->body($data['error'])
+                        ->danger()
+                        ->send();
+                    }else{
+                        $status = 'Active';
+                        RequestsController::updateStatus($status,$record);
+                    }
+
                 })
                 ->requiresConfirmation(),
                 Action::make('rejectRequests')
@@ -63,6 +76,7 @@ class pendingRequestsTable extends BaseWidget
                 ])
                 ->action(function($record,$data){
                     RequestsController::rejectRequests($record,$data);
+
                 })
                 ->requiresConfirmation()
                 

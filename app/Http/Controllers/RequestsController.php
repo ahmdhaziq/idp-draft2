@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Handlers\HandlerResolver;
 use App\Models\AccessRequests;
 use App\Models\ServiceAssets;
+use App\Models\services;
 use App\Models\User;
 use Filament\Notifications\Notification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -48,7 +51,6 @@ class RequestsController extends Controller
             ->error()
             ->send();
         }
-
     }
 
     public static function getRequests($requestId,$view){
@@ -65,6 +67,15 @@ class RequestsController extends Controller
             'status' => 'Approved',
             ]
         );
+
+        $serviceId = ServiceAssets::where('id',$record->assetId)->value('serviceId');
+        $handler = HandlerResolver::resolve(services::where('id',$serviceId)->value('service_identifier'));
+        $response = $handler->GrantAccess($record);
+
+        return $response instanceof JsonResponse
+        ? $response->getData(true)
+        : $response;
+
     }
 
     public static function rejectRequests ($record,$data){
@@ -73,31 +84,30 @@ class RequestsController extends Controller
             [
                 'status' => 'Rejected',
                 'rejection_remark' => $rejectRemark,
-            ]
-            );
+            ]);
+
     }
 
     public static function getUserId($userId){
 
         $email = User::where('id',$userId)->value('email');
         
-
         $response = Http::withToken(env('GITLAB_TOKEN'))
         ->get('https://gitlab.teratotech.com/api/v4/users',[
         'search' => $email,
         ]);
         
-         
         $user = $response->json();
-        
-      
-
-        
         $gitlabUserId = $user[0]['id'];
-        
         
         return $gitlabUserId ?? null;
 
+     }
+
+     public static function updateStatus ($status,$record){
+        $record->update([
+            'status'=> $status,
+        ]);
      }
 
 
