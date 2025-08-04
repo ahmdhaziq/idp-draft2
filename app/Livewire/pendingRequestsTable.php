@@ -53,12 +53,14 @@ class pendingRequestsTable extends BaseWidget
                 ->button()
                 ->action(function($record){
                     $data = RequestsController::approveRequests($record);
+                    
                     if (isset($data['error'])){
                         Notification::make()
                         ->title('Access Granting Failed. Please try again')
                         ->body($data['error'])
                         ->danger()
                         ->send();
+                        dd($data);
                     }else{
                         $status = 'Active';
                         RequestsController::updateStatus($status,$record);

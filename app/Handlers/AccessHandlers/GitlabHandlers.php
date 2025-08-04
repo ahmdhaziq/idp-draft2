@@ -2,7 +2,7 @@
 
 namespace App\Handlers\AccessHandlers;
 
-use App\Handlers\AccessHandlersInterface;
+use App\Handlers\AccessHandlers\AccessHandlersInterface;
 use App\Models\ServiceAssets;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 class GitlabHandlers implements AccessHandlersInterface{
     public function GrantAccess($record): mixed{
 
-        $ProjMetadata = ServiceAssets::where('id', $record->assetId)->value('metadata');
+        $ProjMetadata = ServiceAssets::where('id', operator: $record->assetId)->value('metadata');
         $ProjId = $ProjMetadata['project_id'];
         $gitlabUserId = $record->request_metadata['gitlabuserId'];
         $duration = $record->duration ? \Carbon\Carbon::parse($record->duration)->toDateString() : null;
@@ -27,24 +27,35 @@ class GitlabHandlers implements AccessHandlersInterface{
         */
 
         if ($action == 'New'){
+            $payload = [
+                'user_id' => $gitlabUserId,
+                'access_level' => (int)$record->access_level
+            ];
+            if (!empty($duration)){
+                $payload['expires_at'] = $duration;
+            }
+
             $response = Http::withToken( env('GITLAB_TOKEN'))
-        ->post('https://gitlab.teratotech.com/haziq.shahril/learning-project/api/v4/projects/'.$ProjId.'/members',[
-            'user_id' => $gitlabUserId,
-            'access_level' => $record->access_level,
-            'expires_at' => $duration
-        ]); 
-        }else if ($action == 'Modify'){
+            ->post('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members',$payload); 
+      
+        } else if ($action == 'Modify'){
+            $payload = [
+                'access_level' => (int)$record->access_level
+            ];
+            if (!empty($duration)){
+                $payload['expires_at'] = $duration;
+            }
             $response = Http::withToken(env('GITLAB_TOKEN'))
-            ->put('https://gitlab.teratotech.com/haziq.shahril/learning-project/api/v4/projects/'.$ProjId.'/members/'. $gitlabUserId,[
-            'access_level' => $record->access_level,
-            'expires_at' => $duration
-            ]);
+            ->put('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'. $gitlabUserId,$payload
+            );
         }
+
+        
        
         if ($response->successful()){
             return $response->json();
         }else {
-            return response()->json([
+            return $response =response()->json([
                 'error' => 'Failed to add user',
                 'details' => $response->json(),
                 'status'=> $response->status()

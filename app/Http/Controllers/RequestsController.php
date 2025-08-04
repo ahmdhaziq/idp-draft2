@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Handlers\HandlerResolver;
+use App\Handlers\AccessHandlers\HandlerResolver;
 use App\Models\AccessRequests;
 use App\Models\ServiceAssets;
 use App\Models\services;
@@ -28,7 +28,7 @@ class RequestsController extends Controller
         $accessRequests->access_action = $data['access_action'];
         $accessRequests->access_type = $data['access_type'];
         $accessRequests->requestName = $assetName . '-' . $requestor . '-Requests' . rand(1,10000);
-        $accessRequests->assetId = ServiceAssets::where('id',$data['assets'])->value('id');
+        $accessRequests->assetId = ServiceAssets::where('id',$data['assetId'])->value('id');
         $accessRequests->context = $data['context'] ?? null;
         $accessRequests->status = 'Pending';
         $accessRequests->duration = $data['duration'] ?? null;
@@ -62,15 +62,17 @@ class RequestsController extends Controller
     }
 
     public static function approveRequests($record){
+        
+
+        $serviceId = ServiceAssets::where('id',$record->assetId)->value('serviceId');
+        $handler = HandlerResolver::resolve(services::where('id',$serviceId)->value('service_identifier'));
+        $response = $handler->GrantAccess($record);
+        
         $record->update(
             [
             'status' => 'Approved',
             ]
         );
-
-        $serviceId = ServiceAssets::where('id',$record->assetId)->value('serviceId');
-        $handler = HandlerResolver::resolve(services::where('id',$serviceId)->value('service_identifier'));
-        $response = $handler->GrantAccess($record);
 
         return $response instanceof JsonResponse
         ? $response->getData(true)

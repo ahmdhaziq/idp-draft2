@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Handlers;
+namespace App\Handlers\AccessHandlers;
 
 use App\Handlers\AccessHandlers\GitlabHandlers;
+use App\Handlers\AccessHandlers\AccessHandlersInterface;
 
 class HandlerResolver{
     public static function resolve($service): AccessHandlersInterface{

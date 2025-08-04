@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Handlers;
+namespace App\Handlers\AccessHandlers;
 
 interface AccessHandlersInterface{
     public function GrantAccess($record): mixed;
