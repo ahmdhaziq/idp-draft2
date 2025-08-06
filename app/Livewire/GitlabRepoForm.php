@@ -128,22 +128,24 @@ class GitlabRepoForm extends Component implements HasForms
         $data = $this->form->getState();
         $gitlabuserId= ' ';
         if (empty($data['gitlabuserId'])){
-            $gitlabuserId = RequestsController::getUserId($data['userid']);
+          $gitlabuserId = RequestsController::getUserId($data['userid']);
         }else{
-            $gitlabuserId = $data['gitlabuserId'];
+          $gitlabuserId = $data['gitlabuserId'];
         }
 
         if ($gitlabuserId == null){
-           $this->manualGitlabId = true;
-           session()->flash('success','No Gitlab User ID found with email, please fill in the form.');
-           return;
+            $this->manualGitlabId = true;
+        session()->flash('success','No Gitlab User ID found with email, please fill in the form.');
+            return;
         }else{
             $data['gitlabuserId'] = $gitlabuserId;
             RequestsController::newRequests($data);
             session()->flash('success',value: 'Requests Submitted Successfully');
         }
-        
-    }
+    
+}
+
+
 
     public function render()
     {

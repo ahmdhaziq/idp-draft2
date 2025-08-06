@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Handlers\AccessHandlers\GitlabHandlers;
 use App\Handlers\AccessHandlers\HandlerResolver;
 use App\Models\AccessRequests;
 use App\Models\ServiceAssets;
 use App\Models\services;
 use App\Models\User;
+use DB;
 use Filament\Notifications\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,6 +54,44 @@ class RequestsController extends Controller
             ->send();
         }
     }
+
+    public static function saveMetadataGitlab($data,$accessRequests){
+        $success = false;
+
+        $metadata =[
+            'metadata.gitlabuserId' => $data['gitlabuserId'],
+        ];
+
+        if (isset ($data['currentAccess'])){
+            $metadata['metadata.currentAccessLevel'] = $data['currentAccess'];
+        }
+
+         if ($accessRequests->update($metadata)){
+            $success = true;
+        };
+
+        
+        return $success;
+
+    }
+
+    public static function requestGitlab($data,$gitlabUserId){
+        $ProjMetadata = ServiceAssets::where('id',$data['assetId'])->value('metadata');
+        $ProjId = $ProjMetadata['project_id'];
+
+        if($data['access_action'] == ' Modify'){
+        $currentAccess = GitlabHandlers::getAccessLevel($data,$gitlabUserId,$ProjId);
+
+        if (isset($currentAccess['error'])) {
+            return $currentAccess;
+        }else{
+            $data['currentAccess'] = $currentAccess;
+        }
+    }
+
+        RequestsController::newRequests($data);
+    }
+
 
     public static function getRequests($requestId,$view){
         return $accessrequests = AccessRequests::where('id',$requestId);
@@ -105,6 +145,7 @@ class RequestsController extends Controller
         return $gitlabUserId ?? null;
 
      }
+
 
      public static function updateStatus ($status,$record){
         $record->update([

@@ -26,6 +26,7 @@ class GitlabHandlers implements AccessHandlersInterface{
             - Temporary/Permanent Access is handled through the 'expires_at' data in the payload sent to the endpoints. If null, permanent access will be provided.
         */
 
+
         if ($action == 'New'){
             $payload = [
                 'user_id' => $gitlabUserId,
@@ -39,6 +40,7 @@ class GitlabHandlers implements AccessHandlersInterface{
             ->post('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members',$payload); 
       
         } else if ($action == 'Modify'){
+
             $payload = [
                 'access_level' => (int)$record->access_level
             ];
@@ -65,7 +67,37 @@ class GitlabHandlers implements AccessHandlersInterface{
     }
 
     public function RevokeAccess($record): mixed{
-        return $record;
+        $ProjMetadata = ServiceAssets::where('id', operator: $record->assetId)->value('metadata');
+        $ProjId = $ProjMetadata['project_id'];
+        $accessType = $record->access_type;
+        $action = $record->access_action;
+
+        if($accessType == 'Temporary'){
+             if($action == 'New'){
+                $response = Http::withToken(env('GITLAB_TOKEN'))
+                ->delete('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/');
+             }else if ($action == 'Modify'){
+               $response = null;
+             }
+        }
+
+        return $response;
+       
+    }
+
+    public static function getAccessLevel($record,$gitlabUserId,$ProjId){
+        $response = Http::withToken(env('GITLAB_TOKEN'))
+        ->get('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'.$gitlabUserId);
+
+        if($response->successful()){
+        return $currentAccess = $response['access_level'];
+        }else{
+            return $response=response()-> json([
+                "error" => "Fail to Get Access Level",
+                "details" => $response->json(),
+                "status" => $response->status()
+            ]);
+        }
     }
 
 
