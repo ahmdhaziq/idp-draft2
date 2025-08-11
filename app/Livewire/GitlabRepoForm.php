@@ -126,7 +126,7 @@ class GitlabRepoForm extends Component implements HasForms
    
     public function save(){
         $data = $this->form->getState();
-        $gitlabuserId= ' ';
+        /*$gitlabuserId= ' ';
         if (empty($data['gitlabuserId'])){
           $gitlabuserId = RequestsController::getUserId($data['userid']);
         }else{
@@ -141,7 +141,25 @@ class GitlabRepoForm extends Component implements HasForms
             $data['gitlabuserId'] = $gitlabuserId;
             RequestsController::newRequests($data);
             session()->flash('success',value: 'Requests Submitted Successfully');
+        }*/
+
+        $response = RequestsController::requestGitlabRepo($data)->getData(true);
+        $message = $response['message'];
+
+        if(isset($response['error'])){
+            Notification::make()
+        ->title($response['error'])
+        ->body($message)
+        ->danger()
+        ->send();
+        }else{
+             Notification::make()
+        ->title('Request Successfully Sent!')
+        ->body($message)
+        ->success()
+        ->send();
         }
+       
     
 }
 

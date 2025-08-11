@@ -3,6 +3,7 @@
 namespace App\Handlers\AccessHandlers;
 
 use App\Handlers\AccessHandlers\AccessHandlersInterface;
+use App\Models\AccessRequests;
 use App\Models\ServiceAssets;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -71,17 +72,41 @@ class GitlabHandlers implements AccessHandlersInterface{
         $ProjId = $ProjMetadata['project_id'];
         $accessType = $record->access_type;
         $action = $record->access_action;
+        $gitlabUserId = $record->request_metadata['gitlabuserId'];
 
-        if($accessType == 'Temporary'){
              if($action == 'New'){
                 $response = Http::withToken(env('GITLAB_TOKEN'))
-                ->delete('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/');
+                ->delete('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'.$gitlabUserId);
              }else if ($action == 'Modify'){
-               $response = null;
-             }
-        }
+               $accessLevel = $record->request_metadata['currentAccessLevel'];
 
-        return $response;
+               $payload = [
+                'access_level' => $accessLevel,
+                'expires_at' => null
+               ];
+               
+               
+
+               $response = Http::withToken(env('GITLAB_TOKEN'))
+               ->put('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'. $gitlabUserId,$payload);
+             }
+
+             if ($response->successful()){
+                AccessRequests::where('id', $record->id)->update([
+                    "status" => "Revoked"
+                ]);
+
+                return response()->json([
+                    $response->body(),
+                    'message' => 'Successfully Revoked Access!',
+                ]);
+             }else{
+                return response()->json([
+                    $response->body(),
+                    "error" => $response->status(),
+                    "message" => "Failed to Revoke Access."
+                ]);
+             }
        
     }
 
@@ -90,7 +115,7 @@ class GitlabHandlers implements AccessHandlersInterface{
         ->get('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'.$gitlabUserId);
 
         if($response->successful()){
-        return $currentAccess = $response['access_level'];
+        return $response->json();
         }else{
             return $response=response()-> json([
                 "error" => "Fail to Get Access Level",
@@ -98,6 +123,21 @@ class GitlabHandlers implements AccessHandlersInterface{
                 "status" => $response->status()
             ]);
         }
+    }
+
+    public static function checkGitlabUserIdValidity($gitlabUserId){
+        $valid = false;
+        $response = Http::withToken(env('GITLAB_TOKEN'))
+        ->get('https://gitlab.teratotech.com/api/v4/users/'.$gitlabUserId);
+
+        if ($response->successful()){
+            $valid = true;
+        }else {
+            $valid = false;
+        }
+
+        return $valid;
+
     }
 
 

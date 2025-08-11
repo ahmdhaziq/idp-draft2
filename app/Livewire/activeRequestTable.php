@@ -2,11 +2,21 @@
 
 namespace App\Livewire;
 
+use App\Handlers\AccessHandlers\AccessHandlersInterface;
+use App\Handlers\AccessHandlers\GitlabHandlers;
+use App\Handlers\AccessHandlers\HandlerResolver;
 use App\Models\AccessRequests;
+use App\Models\ServiceAssets;
+use App\Models\services;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Filament\Tables\Actions\Action;
+
+
+
 
 class activeRequestTable extends BaseWidget
 {
@@ -15,7 +25,7 @@ class activeRequestTable extends BaseWidget
         return $table
             ->query(function(){
                 // ...
-                $query = AccessRequests::where('status','=','Approved');
+                $query = AccessRequests::where('status','=','Active');
 
                 return $query;
             }
@@ -39,7 +49,37 @@ class activeRequestTable extends BaseWidget
                 TextColumn::make('access_action')
                 ->label('Access Action'),
                 TextColumn::make('access_type')
-                ->label('Access Type')
+                ->label('Access Type'),
+                TextColumn::make('created_at')
+                ->label('Created At')
+            ])
+            ->actions([
+                Action::make('revokeAccess')
+                ->label('Revoke')
+                ->color('danger')
+                ->button()
+                ->action(function($record){
+                   
+                    $serviceId = ServiceAssets::where('id',$record['assetId'])->value('serviceId');
+                    $handler = HandlerResolver::resolve(services::where('id',$serviceId)->value('service_identifier'));
+                    $response = $handler->RevokeAccess($record)->getData(true);
+
+                    if (isset($response['error'])){
+                        Notification::make()
+                        ->title($response['error'])
+                        ->body($response['message'])
+                        ->danger()
+                        ->send();
+                    }else{
+                        Notification::make()
+                        ->title('Successful! ')
+                        ->body($response['message'])
+                        ->success()
+                        ->send();
+                    }
+                    
+                })
+                ->requiresConfirmation()
             ]);
     }
 }
