@@ -35,63 +35,69 @@ class RequestsController extends Controller
         $accessRequests->status = 'Pending';
         $accessRequests->duration = $data['duration'] ?? null;
         $accessRequests->access_level = $data['access_level'];
-        $accessRequests->request_metadata = [
-            'gitlabuserId' => $data['gitlabuserId'],
-        ];
-        $saveSuccess = $accessRequests->save();
+        $accessRequests->request_metadata = $data['request_metadata'] ?? [];
+        $accessRequests->save();
 
-        if ($saveSuccess){
-            Notification::make()
-            ->title('Requests Successfully Sent!')
-            ->body('Your request has been successfuly sent for review.')
-            ->success()
-            ->send();
-        } else {
-            Notification::make()
-            ->title('Request failed to go through.')
-            ->body('Please try again later.')
-            ->error()
-            ->send();
-        }
+        return $accessRequests;
     }
 
-    public static function saveMetadataGitlab($data,$accessRequests){
-        $success = false;
 
-        $metadata =[
-            'metadata.gitlabuserId' => $data['gitlabuserId'],
-        ];
+    public static function requestGitlabRepo($data){
+        $userid = $data['userid'];
 
-        if (isset ($data['currentAccess'])){
-            $metadata['metadata.currentAccessLevel'] = $data['currentAccess'];
+        if (empty($data['gitlabuserId'])){
+            $gitlabUserId = RequestsController::getUserId($userid);
+        }else {
+            $gitlabUserId = $data['gitlabuserId'];
         }
 
-         if ($accessRequests->update($metadata)){
-            $success = true;
-        };
+        $valid = GitlabHandlers::checkGitlabUserIdValidity($gitlabUserId);
 
-        
-        return $success;
+        if (!$valid){
+            return response()->json( [
+                'error' => 'Fail to send requests.',
+                'message' => 'The Gitlab User ID used is invalid or cannot be found. Please try again.'
+            ]);
+        }else {
+            $data['gitlabuserId'] = $gitlabUserId;
+        }
 
-    }
+        $projMetadata = ServiceAssets::where('id',$data['assetId'])->value('metadata');
+        $projId = $projMetadata['project_id'];
+        $accessLevel = GitlabHandlers::getAccessLevel($data,$gitlabUserId,$projId);
 
-    public static function requestGitlab($data,$gitlabUserId){
-        $ProjMetadata = ServiceAssets::where('id',$data['assetId'])->value('metadata');
-        $ProjId = $ProjMetadata['project_id'];
+        if (isset($accessLevel['error'])){
+            if ($data['access_action']== 'Modify'){
+                return response()->json([
+                    'error' => 'Invalid Requests',
+                    'message' => 'No existing access for the accounts. Please requests new access.'
+                ]);
+            }
 
-        if($data['access_action'] == ' Modify'){
-        $currentAccess = GitlabHandlers::getAccessLevel($data,$gitlabUserId,$ProjId);
-
-        if (isset($currentAccess['error'])) {
-            return $currentAccess;
+            $currentAccessLevel = null;
         }else{
-            $data['currentAccess'] = $currentAccess;
+            if ($data ['access_action'] == 'New'){
+                $data['access_action'] = 'Modify';
+            }
+            $currentAccessLevel = $accessLevel['access_level'] ?? null;
         }
+
+        $data['request_metadata']= [
+            'gitlabuserId' => $gitlabUserId,
+            'currentAccessLevel' => $currentAccessLevel ?? null
+            ];
+
+        $requests = RequestsController::newRequests($data);
+
+        return response()->json([
+            'message' => 'Successfully Submitted Requests',
+            'requestData' => $requests
+        ]);
+
+
     }
 
-        RequestsController::newRequests($data);
-    }
-
+   
 
     public static function getRequests($requestId,$view){
         return $accessrequests = AccessRequests::where('id',$requestId);
