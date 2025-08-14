@@ -64,7 +64,7 @@ class RequestsController extends Controller
 
         $projMetadata = ServiceAssets::where('id',$data['assetId'])->value('metadata');
         $projId = $projMetadata['project_id'];
-        $accessLevel = GitlabHandlers::getAccessLevel($data,$gitlabUserId,$projId);
+        $accessLevel = GitlabHandlers::getAccessLevel($data,$gitlabUserId,$projId)->getData(true);
 
         if (isset($accessLevel['error'])){
             if ($data['access_action']== 'Modify'){
@@ -104,7 +104,20 @@ class RequestsController extends Controller
     }
 
     public static function getRequestsByAssets ($assetId){
-        return $accessrequests = AccessRequests::where('assetId',$assetId);
+        return $accessrequests = AccessRequests::where('assetId',$assetId)->select(
+            'requestName',
+            'userId',
+            'assetId',
+            'access_action',
+            'access_type',
+            'context',
+            'rejection_remark',
+            'status',
+            'duration',
+            'access_level',
+            'request_metadata'
+        )
+        ->get();
     }
 
     public static function approveRequests($record){

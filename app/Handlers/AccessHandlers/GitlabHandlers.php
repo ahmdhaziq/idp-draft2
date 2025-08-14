@@ -115,7 +115,7 @@ class GitlabHandlers implements AccessHandlersInterface{
         ->get('https://gitlab.teratotech.com/api/v4/projects/'.$ProjId.'/members/'.$gitlabUserId);
 
         if($response->successful()){
-        return $response->json();
+        return response()->json($response->json());
         }else{
             return $response=response()-> json([
                 "error" => "Fail to Get Access Level",
