@@ -104,7 +104,8 @@ class RequestsController extends Controller
     }
 
     public static function getRequestsByAssets ($assetId){
-        return $accessrequests = AccessRequests::where('assetId',$assetId);
+        return $accessrequests = AccessRequests::where('assetId',$assetId)
+        ->get();
     }
 
     public static function approveRequests($record){
